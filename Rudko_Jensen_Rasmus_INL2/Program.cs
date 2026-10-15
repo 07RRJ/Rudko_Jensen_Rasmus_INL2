@@ -10,7 +10,7 @@ private static void Main(string[] args){
 class Kalah{
     Random rng = new Random();
     int[] board = new int[14];
-    int pit_amount = 6, p0_store = 0, p1_store = 13;
+    int pit_amount = 6, ai_store = 0, player_store = 7;
     bool player_move;
     ConsoleColor red = ConsoleColor.Red;
     ConsoleColor blue = ConsoleColor.Blue;
@@ -35,11 +35,11 @@ class Kalah{
         for (int i = 1; i < 1 + pit_amount; i++)
             print($"{board[i]} | ", false, red);
         print("");
-        print(p0_store, false, red);
+        print(ai_store, false, red);
 
         print(" |———+———+———+———+———+———| ", false);
 
-        print(board[p1_store], color: blue);
+        print(board[player_store], color: blue);
         print("  | ", false);
         for (int i = pit_amount + 2; i < board.Length; i++)
             print($"{board[i]} | ", false, blue);
@@ -58,9 +58,8 @@ class Kalah{
         return player0 && player1;
     }
     bool possible_move(int move){
-        if (move > 6 || move < 0)
+        if (move < 1 || move > 6)
             return false;
-        move -= 1;
         print($"{move}, {player_move}");
         if (player_move){
             return board[move + pit_amount + 1] != 0;
@@ -76,14 +75,34 @@ class Kalah{
         int stones = board[move];
         board[move] = 0;
     }
+//     int ReadMove()
+// {
+//     while (true)
+//     {
+//         print("player (1-6): ", false);
+//         string? input = Console.ReadLine();
+
+//         if (int.TryParse(input, out int move) && move >= 1 && move <= 6)
+//         {
+//             return move;
+//         }
+
+//         print("Invalid move. Enter a number from 1 to 6.", true);
+//     }
+// }
     void make_move(){
         int move = -1;
         if (player_move){
+            show_board();
+            print("player (1-6): ", false);
             do {
-                show_board();
-                print("player (1-6): ", false);
-                string input = Console.ReadLine();
-                int.TryParse(input, out move);
+                string? input = Console.ReadLine();
+                if (!int.TryParse(input, out move)){
+                    show_board();
+                    print("you must enter a integer (1-6)");
+                    print("player: ", false);
+                    continue;
+                }
             }
             while (!possible_move(move));
         }
