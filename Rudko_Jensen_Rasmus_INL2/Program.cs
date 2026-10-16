@@ -1,149 +1,216 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using System.Drawing;
-using System.Security.Principal;
-
+﻿using System;
 internal class Program{
 private static void Main(string[] args){
-    Console.Clear();
-    Kalah game = new Kalah();
+    Kalah game = new Kalah(); // start 
+    // OBS: for the rules i mainly follow "https://kalaha.krus.dk"
 }
 class Kalah{
     Random rng = new Random();
-    int[] board = new int[14];
-    int pit_amount = 6, ai_store = 0, player_store = 7;
-    bool player_move;
+    int[] board = new int[14]; // game data (board values)
+    int pitAmount = 6; // amount of pits
+    int playerStore = 6; // idx on board for player store
+    int aiStore = 13; // idx on board for ai store
+    bool playerMove;
     ConsoleColor red = ConsoleColor.Red;
     ConsoleColor blue = ConsoleColor.Blue;
-
+    ConsoleColor green = ConsoleColor.Green;
     public Kalah(){
-        int[] board = {0, 6, 6, 6, 6, 6, 6, 0, 6, 6, 6, 6, 6, 6};
-        this.board = board;
-        this.init();
+        board = new int[] {6, 6, 6, 6, 6, 6, 0, 6, 6, 6, 6, 6, 6, 0};
+        Init(); // start init or rather the "game loop" and logic
     }
-    void show_board(){
-        //     6   5   4   3   2   1
-        //   |=======================|
-        //   | A | A | A | A | A | A |
-        // A |———+———+———+———+———+———| B
-        //   | B | B | B | B | B | B |
-        //   |=======================|
-        //     6   5   4   3   2   1
+    void ShowBoard(){
+        // v-   6    5    4    3    2    1  <-
+        //   |=============================|
+        //   |  A |  A |  A |  A |  A |  A |
+        // A |————+————+————+————+————+————| B
+        //   |  B |  B |  B |  B |  B |  B |
+        //   |=============================|
+        // ->   1    2    3    4    5    6  -^
 
-        print("    6   5   4   3   2   1", color: red);
-        print("  |=======================|");
-        print("  | ", false);
-        for (int i = 1; i < 1 + pit_amount; i++)
-            print($"{board[i]} | ", false, red);
-        print("");
-        print(ai_store, false, red);
+        Print("");
+        Print("  v-   6    5    4    3    2    1  <-");
+        Print("    |=============================|");
+        Print("    | ", false);
 
-        print(" |———+———+———+———+———+———| ", false);
+        for (int i = 12; i >= 7; i--) // write pits mirrored from data
+            Print($"{board[i], 2} | ", false, red);
 
-        print(board[player_store], color: blue);
-        print("  | ", false);
-        for (int i = pit_amount + 2; i < board.Length; i++)
-            print($"{board[i]} | ", false, blue);
-        print("");
-        print("  |=======================|");
-        print("    1   2   3   4   5   6", color: blue);
+        Print("");
+        Print($" {board[aiStore], 2}", false, red);
+        Print(" |————+————+————+————+————+————| ", false);
+        Print($"{board[playerStore], 2}", color: blue);
+
+        Print("    | ", false);
+        for (int i = 0; i < pitAmount; i++) // write out pits
+            Print($"{board[i], 2} | ", false, blue);
+
+        Print("");
+        Print("    |=============================|");
+        Print("  ->   1    2    3    4    5    6  -^");
+        Print("");
     }
-    bool game_over(){
-        bool player0 = false, player1 = false;
-        for (int i = 0; i < pit_amount; i++){
-            if (board[i + 1] != 0)
-                player0 = true;
-            if (board[i + pit_amount + 1] != 0)
-                player0 = true;
+    bool OneSideIsEmpty(){
+        bool noAvailabePlayerMoves = true, noAvailabeAiMoves = true;
+        for (int i = 0; i < pitAmount; i++){ // checks if one player doesnt have any moves
+            if (board[i] > 0)
+                noAvailabePlayerMoves = false;
+            if (board[i + pitAmount + 1] > 0)
+                noAvailabeAiMoves = false;
         }
-        return player0 && player1;
+        return noAvailabePlayerMoves || noAvailabeAiMoves;
     }
-    bool possible_move(int move){
-        if (move < 1 || move > 6)
+    bool GameOver(){
+        return board[aiStore] > 36 || board[playerStore] > 36 || OneSideIsEmpty();
+        //     return true; // has more than half and at least one side is empty
+
+        // return false;
+    }
+    bool IsValidMove(int move){
+        if (playerMove && (move < 0 || move > 5)) // valid player move?
             return false;
-        print($"{move}, {player_move}");
-        if (player_move){
-            return board[move + pit_amount + 1] != 0;
-        }
-        else {
-            return board[move + 1] != 0;
-        }
-    }
-    void play_out_move(int move){
-        if (player_move){
-            move += pit_amount + 1;
-        }
-        int stones = board[move];
-        board[move] = 0;
-    }
-//     int ReadMove()
-// {
-//     while (true)
-//     {
-//         print("player (1-6): ", false);
-//         string? input = Console.ReadLine();
 
-//         if (int.TryParse(input, out int move) && move >= 1 && move <= 6)
-//         {
-//             return move;
-//         }
+        if (!playerMove && (move < 7 || move > 12)) // valid ai move?
+            return false;
 
-//         print("Invalid move. Enter a number from 1 to 6.", true);
-//     }
-// }
-    void make_move(){
-        int move = -1;
-        if (player_move){
-            show_board();
-            print("player (1-6): ", false);
-            do {
-                string? input = Console.ReadLine();
-                if (!int.TryParse(input, out move)){
-                    show_board();
-                    print("you must enter a integer (1-6)");
-                    print("player: ", false);
-                    continue;
-                }
+        return board[move] > 0; // is the pit empty?
+    }
+    void PlayOutMove(int move){
+        int currentPit = move; // better name for the situation and nice to keep separate
+        int ownStore = playerMove ? playerStore : aiStore; // your store idx
+        int opponentStore = playerMove ? aiStore : playerStore; // opponent store idx
+
+        int stones = board[currentPit]; // store stones
+        board[currentPit] = 0; // remove taken stones
+
+        while (stones > 0){
+            currentPit = (currentPit + 1) % 14; // increase idx and loop around
+
+            if (currentPit == opponentStore) // skip opponents store
+                continue;
+
+            board[currentPit]++; // place stone
+            stones--; // remove stone from picked up ones
+        }
+
+        if (currentPit == ownStore){
+            int startPit = playerMove ? 0 : 7;
+            for (int i = startPit; i < pitAmount + startPit; i++)
+                if (board[i] > 0)
+                    return; // if you end in your store play again
+        }
+
+        bool landedOnOwnSide = playerMove ? // if landed on your own side
+            (currentPit >= 0 && currentPit <= 5) : // player
+            (currentPit >= 7 && currentPit <= 12); // ai
+
+        if (landedOnOwnSide && board[currentPit] == 1){ // if it was empty
+            int oppositePit = 12 - currentPit; // opposite side idx
+
+            board[ownStore] += board[oppositePit] + 1; // take them
+            board[oppositePit] = 0; // empty
+            board[currentPit] = 0; // empty
+        }
+        playerMove = !playerMove; // change turn
+    }
+    void MakePlayerMove(){
+        int move;
+        string? input;
+
+        while (true) {
+            Print("choose (1-6): ", false, color: green);
+            input = Console.ReadLine();
+
+            if (!int.TryParse(input, out move)){ // check if number
+                Print("must enter an integer");
+                continue;
             }
-            while (!possible_move(move));
-        }
-        else{
-            do {
-                move = rng.Next(1, 6);
+
+            move--; // from 1-6 to 0-5 to get board idx
+
+            if (!IsValidMove(move)){ // if it is a valid move
+                Print("invalid number");
+                continue;
             }
-            while (!possible_move(move));
+            break;
         }
 
-        play_out_move(move);
-
-        player_move = !player_move;
+        PlayOutMove(move);
     }
-    void init(){
-        player_move = rng.Next(0, 1) == 0;
-        while (!game_over()){
-            // Console.Clear();
-            // Console.SetCursorPosition(0, 0);
-            make_move();
+    void MakeAiMove(){
+        int move = -1; // simpler to do this instead a do while when testing since i can set first input
+
+        while (!IsValidMove(move)){ // re generate a number until it is valid 
+            move = rng.Next(7, 13); // 7-12 since idx 0-5 is player pits, 6 is player store 7-12 ai pit, 13 ai store
+        }
+
+        PlayOutMove(move);
+        Print($"ai chose pit: {move - 6}");
+    }
+    void CollectRemainingStones(){ // empty pits
+        for (int i = 0; i < pitAmount; i++){
+            board[aiStore] += board[i + 7];
+            board[i + 7] = 0;
+
+            board[playerStore] += board[i];
+            board[i] = 0;
+        }
+    }
+    void Init(){
+        Console.Clear();
+
+        playerMove = rng.Next(0, 2) == 0; // "randomly" decide who starts
+        string starts = playerMove ? "player" : "ai";
+        Print($"{starts} starts");
+
+        while (!GameOver()){ // while no one has reached 36+ and everyone has stones
+            ShowBoard();
+            if (playerMove)
+                MakePlayerMove();
+            else
+                MakeAiMove();
+        }
+        CollectRemainingStones(); // set all pits to 0
+        ShowBoard(); // show final board
+
+        int playerScore = board[playerStore];
+        int aiScore = board[aiStore];
+
+        if (playerScore > aiScore){ // player won
+            Print($"player won: {playerScore}", false, color: blue);
+            Print($" - {aiScore}", color: red);
+        }
+        else if (aiScore > playerScore){ // ai won
+            Print($"ai won: {aiScore}", false, color: red);
+            Print($" - {playerScore}", color: blue);
+        }
+        else{ // draw
+            Print($"draw, player: {playerScore}", false, color: blue);
+            Print($", ai: {aiScore}", color: red);
         }
     }
 }
-static void print(object text, bool line = true, ConsoleColor color = ConsoleColor.White){ // like python ish
+static void Print(object text, bool line = true, ConsoleColor color = ConsoleColor.White){
     string msg = $"{text}";
-    if (color != ConsoleColor.White){
+
+    if (color != ConsoleColor.White){ // if you want to color numbers
         foreach (char letter in msg){
-            if (char.IsDigit(letter)){
+            if (char.IsDigit(letter)){ // if char is digit write it out in selected color
                 Console.ForegroundColor = color;
                 Console.Write(letter);
                 Console.ForegroundColor = ConsoleColor.White;
             }
-            else    
+            else{
                 Console.Write(letter);
+            }
         }
         if (line)
-            Console.WriteLine("");
+            Console.WriteLine();
     }
-    else if (line)
+    else if (line){ // full line (default for this func)
         Console.WriteLine(msg);
-    else
+    }
+    else{
         Console.Write(msg);
+    }
 }
 }
